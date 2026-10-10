@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard | Smart Parking</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <div class="page-shell">
+        <nav class="navbar">
+            <div class="navbar-inner">
+                <a href="/" class="brand">
+                    <span class="brand-mark">SP</span>
+                    <span class="brand-copy">
+                        <strong>Smart Parking</strong>
+                        <span>Driver workspace</span>
+                    </span>
+                </a>
+                <div class="nav-links">
+                    <a href="/user/dashboard" class="nav-link active">Dashboard</a>
+                    <a href="/user/history" class="nav-link">History</a>
+                    <form th:action="@{/logout}" method="post" class="nav-form">
+                        <button type="submit" class="nav-link nav-button logout">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container">
+            <header class="page-header">
+                <span class="page-kicker">Driver command center</span>
+                <h1 class="page-title">Welcome back, <span th:text="${user.name}">Driver</span>.</h1>
+                <p class="page-subtitle">
+                    Reserve a slot, check in when you arrive, and complete your exit with safer booking state handling
+                    and cleaner dashboards.
+                </p>
+            </header>
+
+            <div class="alert-stack">
+                <div th:if="${success}" class="alert alert-success">
+                    <span th:text="${success}"></span>
+                </div>
+                <div th:if="${error}" class="alert alert-error">
+                    <span th:text="${error}"></span>
+                </div>
+            </div>
+
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <div class="stat-label">Available slots</div>
+                    <div class="stat-value" th:text="${availableCount}">0</div>
+                    <div class="stat-foot">Across <span th:text="${totalSlots}">0</span> active slots</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Network availability</div>
+                    <div class="stat-value">
+                        <span th:text="${#numbers.formatDecimal(availabilityRate, 1, 0)}">0</span>%
+                    </div>
+                    <div class="stat-foot"><span th:text="${engagedCount}">0</span> slots are currently engaged</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Completed visits</div>
+                    <div class="stat-value" th:text="${completedVisits}">0</div>
+                    <div class="stat-foot">Finished parking sessions</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Total spend</div>
+                    <div class="stat-value">
+                        Rs <span th:text="${#numbers.formatDecimal(totalSpent, 1, 2)}">0.00</span>
+                    </div>
+                    <div class="stat-foot">Average Rs <span th:text="${#numbers.formatDecimal(averageSpend, 1, 2)}">0.00</span> per completed stay</div>
+                </article>
+            </section>
+
+            <div th:if="${currentBooking != null}" class="active-booking">
+                <div>
+                    <div class="session-title">
+                        <h2 class="section-title" style="font-size: 1.4rem;">
+                            Current booking in slot <span th:text="${currentBooking.slotNumber}">A-01</span>
+                        </h2>
+                        <span th:if="${currentBooking.status == 'RESERVED'}" class="chip warning">Reserved</span>
+                        <span th:if="${currentBooking.status == 'ACTIVE'}" class="chip danger">Checked in</span>
+                    </div>
+
+                    <p th:if="${currentBooking.status == 'RESERVED'}" class="status-note">
+                        Reserved at
+                        <strong th:text="${#temporals.format(currentBooking.reservedAt, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 10:30 AM</strong>.
+                        Check in before the reservation expires.
+                    </p>
+                    <p th:if="${currentBooking.status == 'ACTIVE'}" class="status-note">
+                        Checked in at
+                        <strong th:text="${#temporals.format(currentBooking.checkedInAt, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 10:30 AM</strong>.
+                        Charges are calculated from the check-in time.
+                    </p>
+
+                    <div class="session-meta">
+                        <div class="meta-block" th:if="${currentBooking.status == 'RESERVED'}">
+                            <strong th:text="${reservationMinutesRemaining} + ' min'">15 min</strong>
+                            <span>Minutes remaining to check in</span>
+                        </div>
+                        <div class="meta-block" th:if="${currentBooking.status == 'ACTIVE'}">
+                            <strong id="active-duration" th:text="${activeMinutes} + ' min'">0 min</strong>
+                            <span>Elapsed duration</span>
+                        </div>
+                        <div class="meta-block">
+                            <strong th:text="${favoriteZone}">A</strong>
+                            <span>Your most-used zone</span>
+                        </div>
+                        <div class="meta-block" th:if="${currentBooking.status == 'ACTIVE'}">
+                            <strong id="active-estimate">Rs <span th:text="${#numbers.formatDecimal(estimatedAmount, 1, 2)}">0.00</span></strong>
+                            <span>Projected charge</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; gap: 12px;">
+                    <form th:if="${currentBooking.status == 'RESERVED'}" th:action="@{/user/check-in}" method="post">
+                        <button type="submit" class="btn btn-primary">Check in now</button>
+                    </form>
+                    <form th:if="${currentBooking.status == 'ACTIVE'}" th:action="@{/user/exit}" method="post">
+                        <button type="submit" class="btn btn-danger">Exit parking session</button>
+                    </form>
+                </div>
+            </div>
+
+            <section class="dashboard-grid section" style="padding-top: 18px;">
+                <div>
+                    <article class="panel">
+                        <div class="section-header">
+                            <div>
+                                <span class="chip accent">Slot explorer</span>
+                                <h2 class="card-title">Reserve your next parking space</h2>
+                                <p class="card-copy">Only available slots appear here. Reserved and occupied slots are automatically hidden.</p>
+                            </div>
+                        </div>
+
+                        <div class="search-row">
+                            <input id="slotSearch" type="text" class="form-control" placeholder="Search by slot number or zone">
+                            <span class="chip">Open now: <span th:text="${availableCount}">0</span></span>
+                        </div>
+
+                        <div th:if="${#lists.isEmpty(availableSlots)}" class="empty-state">
+                            <strong>No open slots right now</strong>
+                            <p>Every active slot is currently engaged. Please check again shortly.</p>
+                        </div>
+
+                        <div th:if="${!#lists.isEmpty(availableSlots)}" class="slot-grid" id="slotGrid">
+                            <div class="slot-item"
+                                th:each="slot : ${availableSlots}"
+                                th:attr="data-slot=${#strings.toLowerCase(slot.slotNumber)},data-zone=${#strings.toLowerCase(slot.zone)}">
+                                <div class="slot-top">
+                                    <div>
+                                        <span class="slot-number" th:text="${slot.slotNumber}">A-01</span>
+                                        <div class="slot-zone">Zone <span th:text="${slot.zone}">A</span></div>
+                                    </div>
+                                    <span class="chip success">Available</span>
+                                </div>
+                                <div class="slot-bottom">
+                                    <form th:if="${currentBooking == null}" th:action="@{/user/book}" method="post">
+                                        <input type="hidden" name="slotId" th:value="${slot.id}">
+                                        <button type="submit" class="btn btn-primary btn-sm">Reserve slot</button>
+                                    </form>
+                                    <div th:if="${currentBooking != null}" class="chip">Complete your open booking before reserving another slot</div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <aside class="sidebar-stack">
+                    <article class="panel">
+                        <span class="chip warning">Quick summary</span>
+                        <h2 class="card-title">Your parking profile</h2>
+                        <div class="list" style="margin-top: 14px;">
+                            <div class="list-item">
+                                <div>
+                                    <strong>Favorite zone</strong>
+                                    <span>Most frequent parking area</span>
+                                </div>
+                                <span class="chip accent" th:text="${favoriteZone}">A</span>
+                            </div>
+                            <div class="list-item">
+                                <div>
+                                    <strong>History view</strong>
+                                    <span>Review completed, reserved, and cancelled bookings</span>
+                                </div>
+                                <a href="/user/history" class="btn btn-secondary btn-sm">Open history</a>
+                            </div>
+                            <div class="list-item">
+                                <div>
+                                    <strong>Security mode</strong>
+                                    <span>Protected by Spring Security</span>
+                                </div>
+                                <span class="chip success">Enabled</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <span class="chip">Recommended</span>
+                        <h2 class="card-title">Best open picks</h2>
+                        <div th:if="${#lists.isEmpty(recommendedSlots)}" class="empty-state" style="padding: 24px 18px;">
+                            <strong>No recommendations</strong>
+                            <p>Recommendations appear here whenever slots are available.</p>
+                        </div>
+                        <div th:if="${!#lists.isEmpty(recommendedSlots)}" class="list" style="margin-top: 14px;">
+                            <div class="list-item" th:each="slot : ${recommendedSlots}">
+                                <div>
+                                    <strong th:text="${slot.slotNumber}">A-01</strong>
+                                    <span>Zone <span th:text="${slot.zone}">A</span></span>
+                                </div>
+                                <span class="chip success">Open</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <span class="chip accent">Recent activity</span>
+                        <h2 class="card-title">Latest bookings</h2>
+                        <div th:if="${#lists.isEmpty(recentBookings)}" class="empty-state" style="padding: 24px 18px;">
+                            <strong>No activity yet</strong>
+                            <p>Your reservation and parking timeline will appear here.</p>
+                        </div>
+                        <div th:if="${!#lists.isEmpty(recentBookings)}" class="list" style="margin-top: 14px;">
+                            <div class="list-item" th:each="booking : ${recentBookings}">
+                                <div>
+                                    <strong th:text="${booking.slotNumber}">A-01</strong>
+                                    <span th:text="${#temporals.format(booking.reservedAt, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 09:15 AM</span>
+                                </div>
+                                <span th:if="${booking.status == 'RESERVED'}" class="badge badge-warning">Reserved</span>
+                                <span th:if="${booking.status == 'ACTIVE'}" class="badge badge-occupied">Active</span>
+                                <span th:if="${booking.status == 'COMPLETED'}" class="badge badge-available">Completed</span>
+                                <span th:if="${booking.status == 'CANCELLED'}" class="badge badge-warning">Cancelled</span>
+                            </div>
+                        </div>
+                    </article>
+                </aside>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-inner">
+                <span>Driver workspace</span>
+                <span class="tiny">Reservations now expire automatically if a user does not check in within 15 minutes.</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const slotSearch = document.getElementById('slotSearch');
+        const slotGrid = document.getElementById('slotGrid');
+        if (slotSearch && slotGrid) {
+            const cards = Array.from(slotGrid.querySelectorAll('.slot-item'));
+            slotSearch.addEventListener('input', (event) => {
+                const value = event.target.value.trim().toLowerCase();
+                cards.forEach((card) => {
+                    const slot = card.dataset.slot || '';
+                    const zone = card.dataset.zone || '';
+                    const visible = !value || slot.includes(value) || zone.includes(value);
+                    card.classList.toggle('hidden', !visible);
+                });
+            });
+        }
+
+        const estimateNode = document.getElementById('active-estimate');
+        const durationNode = document.getElementById('active-duration');
+        if (estimateNode && durationNode) {
+            let minutes = Number(durationNode.textContent.replace(/\D/g, '') || '0');
+            const render = () => {
+                const hours = Math.max(1, Math.ceil(minutes / 60));
+                durationNode.textContent = minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+                estimateNode.textContent = `Rs ${(hours * 20).toFixed(2)}`;
+            };
+            render();
+            window.setInterval(() => {
+                minutes += 1;
+                render();
+            }, 60000);
+        }
+    </script>
+</body>
+
+</html>

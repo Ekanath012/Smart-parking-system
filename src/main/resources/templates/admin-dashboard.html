@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Smart Parking</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <div class="page-shell">
+        <nav class="navbar">
+            <div class="navbar-inner">
+                <a href="/" class="brand">
+                    <span class="brand-mark">SP</span>
+                    <span class="brand-copy">
+                        <strong>Smart Parking</strong>
+                        <span>Operations dashboard</span>
+                    </span>
+                </a>
+                <div class="nav-links">
+                    <a href="/admin/dashboard" class="nav-link active">Dashboard</a>
+                    <form th:action="@{/logout}" method="post" class="nav-form">
+                        <button type="submit" class="nav-link nav-button logout">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container">
+            <header class="page-header">
+                <span class="page-kicker">Operations command center</span>
+                <h1 class="page-title">Admin dashboard</h1>
+                <p class="page-subtitle">
+                    Monitor slot utilization, reservation holds, active parking sessions, and paginated booking history
+                    using secure controllers and DTO-backed screens.
+                </p>
+            </header>
+
+            <div class="alert-stack">
+                <div th:if="${success}" class="alert alert-success">
+                    <span th:text="${success}"></span>
+                </div>
+                <div th:if="${error}" class="alert alert-error">
+                    <span th:text="${error}"></span>
+                </div>
+            </div>
+
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <div class="stat-label">Total active slots</div>
+                    <div class="stat-value" th:text="${totalSlots}">0</div>
+                    <div class="stat-foot">Soft-deleted slots are excluded from live operations</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Availability</div>
+                    <div class="stat-value" th:text="${availableCount}">0</div>
+                    <div class="stat-foot"><span th:text="${reservedCount}">0</span> reserved, <span th:text="${occupiedCount}">0</span> occupied</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Revenue</div>
+                    <div class="stat-value">
+                        Rs <span th:text="${#numbers.formatDecimal(totalRevenue, 1, 2)}">0.00</span>
+                    </div>
+                    <div class="stat-foot">Average Rs <span th:text="${#numbers.formatDecimal(averageRevenuePerVisit, 1, 2)}">0.00</span> per completed booking</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Utilization</div>
+                    <div class="stat-value">
+                        <span th:text="${#numbers.formatDecimal(occupancyRate, 1, 0)}">0</span>%
+                    </div>
+                    <div class="stat-foot"><span th:text="${activeSessions}">0</span> active sessions, <span th:text="${todayEntries}">0</span> bookings created today</div>
+                </article>
+            </section>
+
+            <section class="admin-grid section" style="padding-top: 18px;">
+                <div>
+                    <article class="panel">
+                        <div class="section-header">
+                            <div>
+                                <span class="chip accent">Inventory management</span>
+                                <h2 class="card-title">Add or archive parking slots</h2>
+                                <p class="card-copy">Soft delete keeps historical booking relationships intact while removing slots from live availability.</p>
+                            </div>
+                        </div>
+
+                        <form th:action="@{/admin/add-slot}" method="post" class="inline-form" style="margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label class="form-label" for="slotNumber">Slot number</label>
+                                <input id="slotNumber" type="text" name="slotNumber" class="form-control"
+                                    placeholder="Examples: A-04, C-12, D-01" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save slot</button>
+                        </form>
+
+                        <div class="filter-bar" style="margin-bottom: 18px;">
+                            <input id="adminSearch" type="text" class="form-control" placeholder="Search by slot number or zone">
+                            <select id="adminFilter" class="filter-select" style="max-width: 220px;">
+                                <option value="all">All statuses</option>
+                                <option value="AVAILABLE">Available only</option>
+                                <option value="RESERVED">Reserved only</option>
+                                <option value="OCCUPIED">Occupied only</option>
+                            </select>
+                        </div>
+
+                        <div th:if="${#lists.isEmpty(allSlots)}" class="empty-state">
+                            <strong>No parking slots yet</strong>
+                            <p>Add the first slot above to initialize the live parking network.</p>
+                        </div>
+
+                        <div th:if="${!#lists.isEmpty(allSlots)}" class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Slot</th>
+                                        <th>Zone</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminSlotTable">
+                                    <tr th:each="slot : ${allSlots}"
+                                        th:attr="data-slot=${#strings.toLowerCase(slot.slotNumber)},data-zone=${#strings.toLowerCase(slot.zone)},data-status=${slot.status}">
+                                        <td><strong th:text="${slot.slotNumber}">A-01</strong></td>
+                                        <td th:text="${slot.zone}">A</td>
+                                        <td>
+                                            <span th:if="${slot.status == 'AVAILABLE'}" class="badge badge-available">Available</span>
+                                            <span th:if="${slot.status == 'RESERVED'}" class="badge badge-warning">Reserved</span>
+                                            <span th:if="${slot.status == 'OCCUPIED'}" class="badge badge-occupied">Occupied</span>
+                                        </td>
+                                        <td>
+                                            <form th:action="@{/admin/delete-slot}" method="post">
+                                                <input type="hidden" name="slotId" th:value="${slot.id}">
+                                                <button type="submit" class="btn btn-danger btn-sm"
+                                                    th:disabled="${slot.status != 'AVAILABLE'}"
+                                                    onclick="return confirm('Archive this slot?')">Archive</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+
+                    <article class="table-card" style="margin-top: 18px;">
+                        <div class="section-header">
+                            <div>
+                                <span class="chip warning">Paged booking history</span>
+                                <h2 class="card-title">Admin booking ledger</h2>
+                                <p class="card-copy">This list now loads 15 records per page instead of pulling the full booking table into memory.</p>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Slot</th>
+                                        <th>Reserved</th>
+                                        <th>Checked in</th>
+                                        <th>Exit</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${#lists.isEmpty(bookingPage.content)}">
+                                        <td colspan="6">No booking records found.</td>
+                                    </tr>
+                                    <tr th:each="booking : ${bookingPage.content}">
+                                        <td th:text="${booking.userName}">User</td>
+                                        <td th:text="${booking.slotNumber}">A-01</td>
+                                        <td th:text="${#temporals.format(booking.reservedAt, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 09:15 AM</td>
+                                        <td>
+                                            <span th:if="${booking.checkedInAt != null}"
+                                                th:text="${#temporals.format(booking.checkedInAt, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 09:30 AM</span>
+                                            <span th:if="${booking.checkedInAt == null}">Not checked in</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${booking.exitTime != null}"
+                                                th:text="${#temporals.format(booking.exitTime, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 11:15 AM</span>
+                                            <span th:if="${booking.exitTime == null}">Open</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${booking.status == 'RESERVED'}" class="badge badge-warning">Reserved</span>
+                                            <span th:if="${booking.status == 'ACTIVE'}" class="badge badge-occupied">Active</span>
+                                            <span th:if="${booking.status == 'COMPLETED'}" class="badge badge-available">Completed</span>
+                                            <span th:if="${booking.status == 'CANCELLED'}" class="badge badge-warning">Cancelled</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div th:if="${totalPages > 0}" class="pagination">
+                            <a th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+                                th:href="@{/admin/dashboard(page=${pageNumber})}"
+                                th:text="${pageNumber + 1}"
+                                th:classappend="${pageNumber == currentPage} ? ' active' : ''"
+                                class="page-link">1</a>
+                        </div>
+                    </article>
+                </div>
+
+                <aside class="sidebar-stack">
+                    <article class="panel">
+                        <span class="chip warning">Live utilization</span>
+                        <h2 class="card-title">Occupancy pulse</h2>
+                        <div class="mini-chart" style="margin-top: 16px;">
+                            <div class="meter-label" style="color: var(--ink-soft);">
+                                <span>Current occupied or reserved rate</span>
+                                <strong th:text="${#numbers.formatDecimal(occupancyRate, 1, 0)} + '%'">0%</strong>
+                            </div>
+                            <div class="meter" style="background: rgba(19, 37, 49, 0.08);">
+                                <span th:style="'width:' + ${#numbers.formatDecimal(occupancyRate, 1, 0)} + '%'"></span>
+                            </div>
+                        </div>
+                        <div class="list" style="margin-top: 18px;">
+                            <div class="list-item">
+                                <div>
+                                    <strong>Active sessions</strong>
+                                    <span>Vehicles currently checked in</span>
+                                </div>
+                                <span class="chip accent" th:text="${activeSessions}">0</span>
+                            </div>
+                            <div class="list-item">
+                                <div>
+                                    <strong>Completed bookings</strong>
+                                    <span>Total finished sessions</span>
+                                </div>
+                                <span class="chip success" th:text="${completedBookings}">0</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <span class="chip">Zone mix</span>
+                        <h2 class="card-title">Inventory by zone</h2>
+                        <div class="list" style="margin-top: 14px;">
+                            <div class="list-item" th:each="zone : ${zoneAvailability}">
+                                <div>
+                                    <strong>Zone <span th:text="${zone.key}">A</span></strong>
+                                    <span>Configured active slot count</span>
+                                </div>
+                                <span class="chip" th:text="${zone.value} + ' slots'">0 slots</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <span class="chip accent">Recent activity</span>
+                        <h2 class="card-title">Latest booking events</h2>
+                        <div th:if="${#lists.isEmpty(recentBookings)}" class="empty-state" style="padding: 24px 18px;">
+                            <strong>No booking activity yet</strong>
+                            <p>Recent booking events will appear here once users start using the system.</p>
+                        </div>
+                        <div th:if="${!#lists.isEmpty(recentBookings)}" class="list" style="margin-top: 14px;">
+                            <div class="list-item" th:each="booking : ${recentBookings}">
+                                <div>
+                                    <strong th:text="${booking.slotNumber}">A-01</strong>
+                                    <span>
+                                        <span th:text="${booking.userName}">User</span>
+                                        at
+                                        <span th:text="${#temporals.format(booking.reservedAt, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 09:15 AM</span>
+                                    </span>
+                                </div>
+                                <span th:if="${booking.status == 'ACTIVE'}" class="badge badge-occupied">Active</span>
+                                <span th:if="${booking.status == 'RESERVED'}" class="badge badge-warning">Reserved</span>
+                                <span th:if="${booking.status == 'COMPLETED'}" class="badge badge-available">Closed</span>
+                                <span th:if="${booking.status == 'CANCELLED'}" class="badge badge-warning">Cancelled</span>
+                            </div>
+                        </div>
+                    </article>
+                </aside>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-inner">
+                <span>Operations dashboard</span>
+                <span class="tiny">Admin history is paginated at 15 records per page and slots are archived via soft delete.</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const adminSearch = document.getElementById('adminSearch');
+        const adminFilter = document.getElementById('adminFilter');
+        const adminSlotTable = document.getElementById('adminSlotTable');
+
+        if (adminSlotTable) {
+            const rows = Array.from(adminSlotTable.querySelectorAll('tr'));
+            const applyFilters = () => {
+                const query = (adminSearch?.value || '').trim().toLowerCase();
+                const status = adminFilter?.value || 'all';
+                rows.forEach((row) => {
+                    const slot = row.dataset.slot || '';
+                    const zone = row.dataset.zone || '';
+                    const rowStatus = row.dataset.status || '';
+                    const matchesSearch = !query || slot.includes(query) || zone.includes(query);
+                    const matchesStatus = status === 'all' || rowStatus === status;
+                    row.classList.toggle('hidden', !(matchesSearch && matchesStatus));
+                });
+            };
+
+            adminSearch?.addEventListener('input', applyFilters);
+            adminFilter?.addEventListener('change', applyFilters);
+        }
+    </script>
+</body>
+
+</html>

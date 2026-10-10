@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking History | Smart Parking</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <div class="page-shell">
+        <nav class="navbar">
+            <div class="navbar-inner">
+                <a href="/" class="brand">
+                    <span class="brand-mark">SP</span>
+                    <span class="brand-copy">
+                        <strong>Smart Parking</strong>
+                        <span>Driver workspace</span>
+                    </span>
+                </a>
+                <div class="nav-links">
+                    <a href="/user/dashboard" class="nav-link">Dashboard</a>
+                    <a href="/user/history" class="nav-link active">History</a>
+                    <form th:action="@{/logout}" method="post" class="nav-form">
+                        <button type="submit" class="nav-link nav-button logout">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container">
+            <header class="page-header">
+                <span class="page-kicker">Parking timeline</span>
+                <h1 class="page-title">Booking history</h1>
+                <p class="page-subtitle">
+                    Review reservations, active sessions, completed exits, and cancelled holds from one searchable
+                    timeline backed by DTO-safe data.
+                </p>
+            </header>
+
+            <section class="history-grid">
+                <article class="stat-card">
+                    <div class="stat-label">Total bookings</div>
+                    <div class="stat-value" th:text="${#lists.size(bookings)}">0</div>
+                    <div class="stat-foot">All reservation lifecycle events</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Open bookings</div>
+                    <div class="stat-value" th:text="${openCount}">0</div>
+                    <div class="stat-foot">Reserved or currently active</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Completed sessions</div>
+                    <div class="stat-value" th:text="${completedCount}">0</div>
+                    <div class="stat-foot">Finished and billed visits</div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-label">Average stay</div>
+                    <div class="stat-value">
+                        <span th:text="${#numbers.formatDecimal(averageDurationHours, 1, 1)}">0.0</span>h
+                    </div>
+                    <div class="stat-foot">Favorite zone <span th:text="${favoriteZone}">A</span></div>
+                </article>
+            </section>
+
+            <section class="section" style="padding-top: 18px;">
+                <article class="table-card">
+                    <div class="section-header">
+                        <div>
+                            <span class="chip accent">Search and filter</span>
+                            <h2 class="card-title">Reservation ledger</h2>
+                            <p class="card-copy">Search by slot and filter by lifecycle status without reloading the page.</p>
+                        </div>
+                    </div>
+
+                    <div class="filter-bar" style="margin-bottom: 18px;">
+                        <input id="historySearch" type="text" class="form-control" placeholder="Search by slot number">
+                        <select id="historyFilter" class="filter-select" style="max-width: 220px;">
+                            <option value="all">All statuses</option>
+                            <option value="reserved">Reserved</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(bookings)}" class="empty-state">
+                        <strong>No bookings yet</strong>
+                        <p>Your reservation and parking timeline will appear here after your first booking.</p>
+                    </div>
+
+                    <div th:if="${!#lists.isEmpty(bookings)}" class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Slot</th>
+                                    <th>Reserved</th>
+                                    <th>Checked in</th>
+                                    <th>Exit</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable">
+                                <tr th:each="booking : ${bookings}"
+                                    th:attr="data-slot=${#strings.toLowerCase(booking.slotNumber)},data-status=${#strings.toLowerCase(booking.status)}">
+                                    <td>
+                                        <strong th:text="${booking.slotNumber}">A-01</strong>
+                                        <div th:if="${booking.slotDeleted}" class="status-note">Archived slot</div>
+                                    </td>
+                                    <td th:text="${#temporals.format(booking.reservedAt, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 09:15 AM</td>
+                                    <td>
+                                        <span th:if="${booking.checkedInAt != null}"
+                                            th:text="${#temporals.format(booking.checkedInAt, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 09:30 AM</span>
+                                        <span th:if="${booking.checkedInAt == null}">Not checked in</span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${booking.exitTime != null}"
+                                            th:text="${#temporals.format(booking.exitTime, 'dd MMM yyyy, hh:mm a')}">16 Apr 2026, 11:30 AM</span>
+                                        <span th:if="${booking.exitTime == null}">Open</span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${booking.totalAmount != null and booking.totalAmount > 0}">
+                                            Rs <span th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 2)}">0.00</span>
+                                        </span>
+                                        <span th:if="${booking.totalAmount == null or booking.totalAmount == 0}">Pending</span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${booking.status == 'RESERVED'}" class="badge badge-warning">Reserved</span>
+                                        <span th:if="${booking.status == 'ACTIVE'}" class="badge badge-occupied">Active</span>
+                                        <span th:if="${booking.status == 'COMPLETED'}" class="badge badge-available">Completed</span>
+                                        <span th:if="${booking.status == 'CANCELLED'}" class="badge badge-warning">Cancelled</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+
+            <section class="quick-grid" style="padding-bottom: 38px;">
+                <article class="panel">
+                    <span class="chip warning">Spend summary</span>
+                    <h2 class="card-title">Total billed amount</h2>
+                    <p class="card-copy">
+                        Rs <strong th:text="${#numbers.formatDecimal(totalSpent, 1, 2)}">0.00</strong> across all completed bookings.
+                    </p>
+                </article>
+                <article class="panel">
+                    <span class="chip">Behavior</span>
+                    <h2 class="card-title">Most-used zone</h2>
+                    <p class="card-copy">
+                        Zone <strong th:text="${favoriteZone}">A</strong> appears most frequently in your booking history.
+                    </p>
+                </article>
+                <article class="panel">
+                    <span class="chip accent">Next action</span>
+                    <h2 class="card-title">Need another slot?</h2>
+                    <p class="card-copy">Return to the main dashboard to reserve an available slot or check in to an open reservation.</p>
+                    <div style="margin-top: 16px;">
+                        <a href="/user/dashboard" class="btn btn-primary">Back to dashboard</a>
+                    </div>
+                </article>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-inner">
+                <span>Booking history</span>
+                <span class="tiny">Completed, active, reserved, and cancelled booking states are now tracked explicitly.</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const historySearch = document.getElementById('historySearch');
+        const historyFilter = document.getElementById('historyFilter');
+        const historyTable = document.getElementById('historyTable');
+
+        if (historyTable) {
+            const rows = Array.from(historyTable.querySelectorAll('tr'));
+            const applyFilters = () => {
+                const query = (historySearch?.value || '').trim().toLowerCase();
+                const status = historyFilter?.value || 'all';
+                rows.forEach((row) => {
+                    const slot = row.dataset.slot || '';
+                    const rowStatus = row.dataset.status || '';
+                    const matchesSearch = !query || slot.includes(query);
+                    const matchesStatus = status === 'all' || rowStatus === status;
+                    row.classList.toggle('hidden', !(matchesSearch && matchesStatus));
+                });
+            };
+
+            historySearch?.addEventListener('input', applyFilters);
+            historyFilter?.addEventListener('change', applyFilters);
+        }
+    </script>
+</body>
+
+</html>

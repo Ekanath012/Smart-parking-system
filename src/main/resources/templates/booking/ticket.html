@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Parking Pass - Smart Parking System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/ui-fixes.css}" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #090d16 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            color: #f1f5f9;
+        }
+        .ticket-card {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            max-width: 480px;
+            width: 100%;
+            padding: 2.5rem;
+        }
+        .ticket-header {
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .qr-box {
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 18px;
+            display: inline-block;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        .qr-img {
+            width: 180px;
+            height: 180px;
+            display: block;
+        }
+        .ticket-footer {
+            border-top: 2px dashed rgba(255, 255, 255, 0.15);
+            padding-top: 1.25rem;
+            margin-top: 1.5rem;
+        }
+        .btn-glow {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white !important;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ticket-card text-center">
+        <!-- Header -->
+        <div class="ticket-header">
+            <span class="badge bg-success bg-opacity-20 text-success px-3 py-2 rounded-pill mb-2">
+                <i class="fa-solid fa-circle-check me-1"></i> BOOKING CONFIRMED
+            </span>
+            <h4 class="fw-bold mb-1">Digital Parking Pass</h4>
+            <div class="text-secondary fs-7">Smart Parking Management System</div>
+            <div class="fw-bold text-primary fs-5 mt-2" th:text="${booking.bookingReference}">SPK-123456</div>
+        </div>
+
+        <!-- Scannable QR Code Box -->
+        <div class="mb-4">
+            <div class="qr-box">
+                <img th:if="${booking.qrCodeUrl != null}" th:src="${booking.qrCodeUrl}" alt="Scannable Parking Pass QR Code" class="qr-img">
+                <div th:if="${booking.qrCodeUrl == null and booking.qrCodeBase64 == null}" class="p-4 text-dark font-semibold">QR Code Pass</div>
+            </div>
+            <div class="text-secondary fs-8 mt-2"><i class="fa-solid fa-qrcode me-1"></i> Scan at Parking Entry Gate</div>
+        </div>
+
+        <!-- Pass Details -->
+        <div class="row g-3 text-start fs-7 bg-dark bg-opacity-50 p-3 rounded-3 mb-3">
+            <div class="col-6">
+                <span class="text-secondary d-block">Assigned Slot</span>
+                <strong class="text-primary fs-5" th:text="${booking.slotNumber}">A-01</strong>
+                <span class="text-secondary ms-1 fs-8" th:text="'(' + ${booking.slotType} + ')'">(CAR)</span>
+            </div>
+            <div class="col-6 text-end">
+                <span class="text-secondary d-block">Vehicle Number</span>
+                <strong class="text-light fs-6" th:text="${booking.vehicleNumber}">KA-01-AB-1234</strong>
+            </div>
+            <div class="col-6">
+                <span class="text-secondary d-block">Floor Level</span>
+                <strong class="text-light" th:text="${booking.floorLevel}">Ground</strong>
+            </div>
+            <div class="col-6 text-end">
+                <span class="text-secondary d-block">Hourly Rate</span>
+                <strong class="text-light" th:text="'₹' + ${booking.hourlyRate} + '/hr'">₹20/hr</strong>
+            </div>
+            <div class="col-12 border-top border-secondary border-opacity-25 pt-2">
+                <span class="text-secondary d-block">Entry Timestamp</span>
+                <span class="text-slate-300" th:text="${#temporals.format(booking.entryTime, 'dd MMMM yyyy, HH:mm:ss')}">Time</span>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="ticket-footer d-flex justify-content-between align-items-center">
+            <a href="/user/dashboard" class="btn btn-outline-secondary px-3"><i class="fa-solid fa-arrow-left me-1"></i> Dashboard</a>
+            <button onclick="window.print()" class="btn btn-glow"><i class="fa-solid fa-print me-1"></i> Print / Save Pass</button>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error | Smart Parking</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <div class="page-shell">
+        <nav class="navbar">
+            <div class="navbar-inner">
+                <a href="/" class="brand">
+                    <span class="brand-mark">SP</span>
+                    <span class="brand-copy">
+                        <strong>Smart Parking</strong>
+                        <span>Error recovery</span>
+                    </span>
+                </a>
+            </div>
+        </nav>
+
+        <main class="error-layout">
+            <section class="panel error-card">
+                <span class="chip warning">Handled gracefully</span>
+                <div class="error-code" th:text="${status}">500</div>
+                <h1 class="page-title" th:text="${errorTitle}">Unexpected application error</h1>
+                <p class="page-subtitle" th:text="${errorMessage}">
+                    Something went wrong while processing your request.
+                </p>
+                <p class="status-note">
+                    Request path:
+                    <strong th:text="${path}">/unknown</strong>
+                </p>
+                <div class="hero-actions" style="justify-content: center;">
+                    <a th:href="${homeUrl}" class="btn btn-primary">Return home</a>
+                    <a href="javascript:history.back()" class="btn btn-secondary">Go back</a>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>

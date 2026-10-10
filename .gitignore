@@ -1,0 +1,17 @@
+# Build output
+target/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Runtime uploads
+uploads/
+
+# Secrets - never commit real credentials
+.env
+*.local.properties
+application-local.properties
+application-secret.properties

@@ -1,0 +1,22 @@
+/*
+ * Shared UI fixes (loaded after Bootstrap on every page).
+ *
+ * 1) The templates use bg-opacity-20 / -30 / -60, which Bootstrap 5.3 does not define
+ *    (it only ships 10, 25, 50, 75, 100). Without them "bg-danger bg-opacity-20 text-danger"
+ *    renders as SOLID red with red text, so messages become unreadable. Define the missing steps
+ *    so the translucent tint works as intended.
+ * 2) Give alert text a light, readable colour on the dark theme, with a coloured accent border.
+ */
+.bg-opacity-20 { --bs-bg-opacity: 0.2; }
+.bg-opacity-30 { --bs-bg-opacity: 0.3; }
+.bg-opacity-60 { --bs-bg-opacity: 0.6; }
+
+.alert.bg-danger  { color: #fecaca !important; border: 1px solid rgba(248, 113, 113, 0.55) !important; }
+.alert.bg-success { color: #bbf7d0 !important; border: 1px solid rgba(74, 222, 128, 0.55) !important; }
+.alert.bg-info    { color: #bae6fd !important; border: 1px solid rgba(56, 189, 248, 0.55) !important; }
+.alert.bg-warning { color: #fef08a !important; border: 1px solid rgba(250, 204, 21, 0.55) !important; }
+
+.alert.bg-danger  .fa-solid, .alert.bg-danger  .fas { color: #f87171; }
+.alert.bg-success .fa-solid, .alert.bg-success .fas { color: #4ade80; }
+.alert.bg-info    .fa-solid, .alert.bg-info    .fas { color: #38bdf8; }
+.alert { font-weight: 600; word-break: break-word; }

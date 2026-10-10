@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Smart Parking Management System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #f8fafc;
+        }
+        .error-card {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            max-width: 500px;
+            width: 100%;
+            padding: 2.5rem;
+            text-align: center;
+        }
+        .error-code {
+            font-size: 5rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ef4444, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .btn-custom {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="error-card">
+        <div class="mb-3">
+            <i class="fa-solid fa-triangle-exclamation text-warning display-3"></i>
+        </div>
+        <div class="error-code" th:text="${status}">500</div>
+        <h3 class="mb-3" th:text="${error}">An Error Occurred</h3>
+        <p class="text-secondary mb-4" th:text="${message}">Something went wrong while processing your request.</p>
+
+        <div class="d-flex justify-content-center gap-3">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary text-light px-4">
+                <i class="fa-solid fa-arrow-left me-2"></i> Go Back
+            </a>
+            <a href="/" class="btn btn-custom">
+                <i class="fa-solid fa-house me-2"></i> Return Home
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

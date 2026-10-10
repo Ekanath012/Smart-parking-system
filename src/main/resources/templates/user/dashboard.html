@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Smart Parking Management System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/ui-fixes.css}" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #090d16;
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+        .navbar-custom {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.8rem 0;
+        }
+        .card-custom {
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 1.75rem;
+        }
+        .btn-glow {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white !important;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+        }
+        .slot-pill {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+        }
+        .slot-pill:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        .tag-available {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #4ade80;
+            padding: 0.35rem 0.85rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .number-plate-badge {
+            background: #facc15;
+            color: #0f172a;
+            font-family: monospace;
+            font-weight: 800;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            border: 1.5px solid #0f172a;
+            letter-spacing: 1px;
+            display: inline-block;
+        }
+        .modal-content-custom {
+            background: #1e293b !important;
+            border: 1.5px solid rgba(59, 130, 246, 0.4) !important;
+            color: #ffffff !important;
+            border-radius: 24px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+        }
+        .form-control-modal {
+            background-color: #0f172a !important;
+            border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+            color: #ffffff !important;
+            padding: 0.85rem 1rem !important;
+            border-radius: 12px !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px !important;
+        }
+        .form-control-modal::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1 !important;
+            font-weight: 400 !important;
+        }
+        .form-control-modal:focus {
+            background-color: #0f172a !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35) !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2" href="/user/dashboard">
+                <i class="fa-solid fa-square-parking text-primary fs-3"></i>
+                <span class="text-white">Smart<span class="text-primary">Park</span> Driver</span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-slate-300 fs-7"><i class="fa-solid fa-user me-1 text-primary"></i> Welcome, <strong class="text-white" th:text="${user.name}">Driver</strong></span>
+                <a href="/logout" class="btn btn-outline-danger btn-sm px-3 rounded-pill"><i class="fa-solid fa-power-off me-1"></i> Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+
+        <!-- Flash Alert Messages -->
+        <th:block th:if="${successMessage != null and #strings.length(successMessage) > 0}">
+            <div class="alert alert-success border-0 bg-success bg-opacity-20 text-success rounded-3 mb-4">
+                <i class="fa-solid fa-circle-check me-2"></i> <span th:text="${successMessage}"></span>
+            </div>
+        </th:block>
+        <th:block th:if="${errorMessage != null and #strings.length(errorMessage) > 0}">
+            <div class="alert alert-danger border-0 bg-danger bg-opacity-20 text-danger rounded-3 mb-4">
+                <i class="fa-solid fa-circle-exclamation me-2"></i> <span th:text="${errorMessage}"></span>
+            </div>
+        </th:block>
+
+        <!-- Active Booking Banner (If Any) -->
+        <div th:if="${activeBooking != null}" class="card-custom mb-4 border border-primary border-opacity-50">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <span class="badge bg-primary px-3 py-2 rounded-pill mb-2"><i class="fa-solid fa-clock me-1"></i> ACTIVE PARKING BOOKING</span>
+                    <h4 class="fw-bold text-white mb-1" th:text="'Ref: ' + ${activeBooking.bookingReference}">REF-12345</h4>
+                    <p class="text-slate-300 mb-0">
+                        Slot: <strong class="text-primary fs-5" th:text="${activeBooking.parkingSlot.slotNumber}">A-01</strong> | 
+                        Vehicle Plate: <span class="number-plate-badge" th:text="${activeBooking.vehicleNumber}">KA-01-AB-1234</span> | 
+                        Parked Since: <span class="text-white" th:text="${#temporals.format(activeBooking.entryTime, 'dd MMM yyyy HH:mm')}">Time</span>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <!-- View QR Confirmation Ticket Button -->
+                    <a th:href="@{/booking/confirmation/{id}(id=${activeBooking.id})}" class="btn btn-glow btn-lg rounded-3 px-4 shadow">
+                        <i class="fa-solid fa-qrcode me-2"></i> View Pass &amp; QR Code
+                    </a>
+                    
+                    <!-- Checkout Button -->
+                    <form th:action="@{/user/exit}" method="post">
+                        <input type="hidden" name="bookingId" th:value="${activeBooking.id}">
+                        <button type="submit" class="btn btn-outline-danger btn-lg rounded-3 px-4 shadow"><i class="fa-solid fa-right-from-bracket me-2"></i> Exit &amp; Pay</button>
+                    </form>
+                    <form th:action="@{/user/cancel}" method="post" onsubmit="return confirm('Cancel this active parking booking? The slot will become available again.');">
+                        <input type="hidden" name="bookingId" th:value="${activeBooking.id}">
+                        <button type="submit" class="btn btn-outline-warning btn-lg rounded-3 px-4 shadow"><i class="fa-solid fa-ban me-2"></i> Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Available Slots Grid -->
+        <div class="card-custom mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-square-parking text-primary me-2"></i> Live Available Parking Slots</h5>
+                
+                <div class="tag-available">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span th:text="${#lists.size(availableSlots)} + ' Slots Available'">0 Slots Available</span>
+                </div>
+            </div>
+            <div th:if="${activeBooking != null}" class="alert alert-info bg-info bg-opacity-10 border border-info border-opacity-25 text-info py-2 px-3 mb-3">
+                <i class="fa-solid fa-circle-info me-2"></i>You already have one active booking. Finish it or cancel it to book another available slot. Other customers can still book these available slots.
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-4" th:each="slot : ${availableSlots}">
+                    <div class="slot-pill d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h5 class="fw-bold text-primary mb-0" th:text="${slot.slotNumber}">A-01</h5>
+                                <span class="badge bg-secondary fs-8" th:text="${slot.slotType}">CAR</span>
+                            </div>
+                            <div class="text-slate-300 fs-7">
+                                Rate: <strong class="text-white" th:text="'₹' + ${slot.hourlyRate != null and slot.hourlyRate > 0 ? slot.hourlyRate : 20.0} + '/hr'">₹20.0/hr</strong> 
+                                (<span th:text="${slot.floorLevel != null ? slot.floorLevel : 'Ground'}">Ground</span>)
+                            </div>
+                        </div>
+
+                        <!-- Book Button -->
+                        <button th:if="${activeBooking == null}" 
+                                type="button" 
+                                class="btn btn-glow btn-sm px-3 btn-open-booking" 
+                                th:data-slot-id="${slot.id}"
+                                th:data-slot-number="${slot.slotNumber}">
+                            <i class="fa-solid fa-key me-1"></i> Book
+                        </button>
+                        <span th:if="${activeBooking != null}" class="badge bg-secondary px-3 py-2" title="Complete or cancel your current booking before booking another slot">
+                            Current booking active
+                        </span>
+                    </div>
+                </div>
+
+                <div class="col-12 text-center py-4 text-slate-400" th:if="${#lists.isEmpty(availableSlots)}">
+                    <i class="fa-solid fa-ban fs-3 text-secondary mb-2 d-block"></i>
+                    No available parking slots right now. All slots are currently occupied or under maintenance.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Top-Level Standalone Interactive Booking Modal -->
+    <div class="modal fade" id="globalBookingModal" tabindex="-1" aria-labelledby="globalBookingModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-white" id="globalBookingModalLabel">
+                        <i class="fa-solid fa-car text-primary me-2"></i> Book Parking Slot <span class="text-primary" id="modalSlotNumberDisplay">A-01</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/user/book}" method="post">
+                    <div class="modal-body py-3">
+                        <input type="hidden" name="slotId" id="modalSlotIdInput" value="">
+                        
+                        <div class="mb-3">
+                            <label for="vehicleNumberInput" class="form-label text-slate-300 font-semibold fs-7 mb-2">
+                                <i class="fa-solid fa-id-card me-1 text-primary"></i> Vehicle Registration Number
+                            </label>
+                            <input type="text" 
+                                   id="vehicleNumberInput"
+                                   name="vehicleNumber" 
+                                   class="form-control form-control-modal" 
+                                   placeholder="e.g. KA-01-AB-1234" 
+                                   required 
+                                   autocomplete="off">
+                            <div class="form-text text-slate-400 fs-8 mt-1">Enter valid vehicle number plate (e.g. KA-01-AB-1234 or DL-09-C-5555).</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-glow px-4"><i class="fa-solid fa-check-circle me-1"></i> Confirm Booking</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Modal Trigger Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookingModalElement = document.getElementById('globalBookingModal');
+            const bookingModal = new bootstrap.Modal(bookingModalElement);
+            const slotNumberDisplay = document.getElementById('modalSlotNumberDisplay');
+            const slotIdInput = document.getElementById('modalSlotIdInput');
+            const vehicleInput = document.getElementById('vehicleNumberInput');
+
+            document.querySelectorAll('.btn-open-booking').forEach(button => {
+                button.addEventListener('click', function() {
+                    const slotId = this.getAttribute('data-slot-id');
+                    const slotNumber = this.getAttribute('data-slot-number');
+
+                    slotIdInput.value = slotId;
+                    slotNumberDisplay.textContent = slotNumber;
+
+                    bookingModal.show();
+                });
+            });
+
+            bookingModalElement.addEventListener('shown.bs.modal', function () {
+                vehicleInput.focus();
+            });
+        });
+    </script>
+</body>
+</html>
